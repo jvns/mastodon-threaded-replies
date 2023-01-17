@@ -20,7 +20,6 @@ class Mastodon {
             this.instanceURL = data.instanceURL;
             this.accessToken = data.accessToken;
         }
-        console.log("instance url", this.instanceURL);
     }
 
 

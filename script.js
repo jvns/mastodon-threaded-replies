@@ -7,7 +7,7 @@ var app = Vue.createApp({
         return {
             server: "",
             mastodon: undefined,
-            my_toots: undefined,
+            my_toots: [],
             replies: {},
             user_id: undefined,
             status_id: undefined,
@@ -25,7 +25,7 @@ var app = Vue.createApp({
             return;
         }
         this.user_id = await this.get_user_id();
-        this.my_toots = await this.get_recent_statuses();
+        this.get_recent_statuses();
         // check hash
         if (window.location.hash.length > 0) {
             this.get_thread();
@@ -131,17 +131,33 @@ var app = Vue.createApp({
         },
 
         async get_recent_statuses() {
-            // GET /api/v1/accounts/:id/statuses
-            const response = await this.mastodon.get(`/api/v1/accounts/${this.user_id}/statuses?limit=40`);
-            if (!response.ok) {
-                alert('error getting statuses');
+            var url = `/api/v1/accounts/${this.user_id}/statuses?limit=40`;
+            while (url && this.my_toots.length < 50) {
+                const response = await this.mastodon.get(url);
+                if (!response.ok) {
+                    alert('error getting statuses');
+                }
+                var data = await response.json();
+                // filter out boosts
+                data =  data.filter(status => status.reblog === null);
+                // filter out replies
+                data = data.filter(status => status.in_reply_to_id === null);
+                this.my_toots = this.my_toots.concat(data);
+                url = this.parse_link_header(response.headers.get('Link'));
             }
-            var data = await response.json();
-            // filter out boosts
-            data =  data.filter(status => status.reblog === null);
-            // filter out replies
-            data = data.filter(status => status.in_reply_to_id === null);
-            return data;
+        },
+
+        parse_link_header(link) {
+            if (!link) {
+                return null;
+            }
+            const links = link.split(',');
+            const next = links.find(link => link.includes('rel="next"'));
+            if (!next) {
+                return null;
+            }
+            const url = next.match(/<(.*)>/)[1];
+            return url;
         },
 
         sleep(ms) {
