@@ -89,6 +89,7 @@ a {
               <a :href="format_url(toot)" target="_blank">
                 <span class="time">{{pretty_date(toot.created_at)}}</span>
               </a>
+              <span v-if="toot.favourited" alt="Favourited" aria-label="Favourited" class="ml-1" style="color: #bb2">&#9733;</span>
             </div>
             <div v-html="toot.content"></div>
           </div>
