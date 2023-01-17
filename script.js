@@ -81,18 +81,35 @@ var app = Vue.createApp({
                 alert("error getting thread");
             }
             const data = await response.json();
-            const replies = data.descendants;
-            this.calculate_depths(replies);
-            this.replies[status_id] = replies;
+            this.replies[status_id] = this.sort_replies(data.descendants);
         },
 
-        calculate_depths(replies) {
+        sort_replies(replies) {
             const replies_by_id = {};
+            const children_map = {};
             for (const reply of replies) {
                 replies_by_id[reply.id] = reply;
+                if (reply.in_reply_to_id) {
+                    children_map[reply.in_reply_to_id] = children_map[reply.in_reply_to_id] || [];
+                    children_map[reply.in_reply_to_id].push(reply);
+                }
             }
+            const ordered_replies = [];
             for (const reply of replies) {
                 reply.depth = this.get_depth(reply, replies_by_id);
+                if (reply.depth == 0) {
+                    this.add_reply(reply, ordered_replies, children_map);
+                }
+            }
+            return ordered_replies;
+        },
+
+        add_reply(reply, ordered_replies, children_map) {
+            ordered_replies.push(reply);
+            if (children_map[reply.id]) {
+                for (const child of children_map[reply.id]) {
+                    this.add_reply(child, ordered_replies, children_map);
+                }
             }
         },
 
