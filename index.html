@@ -92,6 +92,13 @@ a {
               <span v-if="toot.favourited" alt="Favourited" aria-label="Favourited" class="ml-1" style="color: #bb2">&#9733;</span>
             </div>
             <div v-html="toot.content"></div>
+            <div v-if="toot.media_attachments.length > 0">
+              <div v-for="media in toot.media_attachments">
+                <a :href="media.url" target="_blank">
+                  <img :src="media.url" :alt="media.description" class="w-48 h-48 object-cover object-left-top">
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         <div v-else v-for="toot in my_toots" class="toot" style="margin-bottom: 2rem;">
@@ -103,6 +110,13 @@ a {
           </div>
 
           <div v-html="toot.content"></div>
+          <div v-if="toot.media_attachments.length > 0">
+              <div v-for="media in toot.media_attachments">
+                <a :href="media.url" target="_blank">
+                  <img :src="media.url" :alt="media.description" class="w-48 h-48 object-cover object-left-top">
+                </a>
+              </div>
+            </div>
 
             <a :href='"/#" + toot.id' class="view-replies">
               View Replies
