@@ -43,33 +43,6 @@ var app = Vue.createApp({
             window.location.hash = "";
         },
 
-        pretty_date(date) {
-            const delta = (new Date() - new Date(date)) / 1000;
-            const days = Math.floor(delta / 86400);
-            var seconds = delta % 86400;
-            const hours = Math.floor(seconds / 3600);
-            seconds = seconds % 3600;
-            const minutes = Math.floor(seconds / 60);
-            seconds = Math.floor(seconds % 60);
-            if (days > 1) {
-                return `${days} days ago`;
-            } else if (days == 1) {
-                return `1 day ago`;
-            } else if (hours > 1) {
-                return `${hours} hours ago`;
-            } else if (hours == 1) {
-                return `1 hour ago`;
-            } else if (minutes > 1) {
-                return `${minutes} minutes ago`;
-            } else {
-                return `1 minute ago`;
-            }
-        },
-
-        format_url(toot) {
-            return `${this.mastodon.instanceURL}/@${toot.account.acct}/${toot.id}`;
-        },
-
         async get_thread() {
             const status_id = window.location.hash.slice(1);
             this.status_id = status_id || undefined;
@@ -94,23 +67,15 @@ var app = Vue.createApp({
                     children_map[reply.in_reply_to_id].push(reply);
                 }
             }
-            const ordered_replies = [];
+            const root_replies = [];
             for (const reply of replies) {
                 reply.depth = this.get_depth(reply, replies_by_id);
+                reply.children = children_map[reply.id];
                 if (reply.depth == 0) {
-                    this.add_reply(reply, ordered_replies, children_map);
+                    root_replies.push(reply);
                 }
             }
-            return ordered_replies;
-        },
-
-        add_reply(reply, ordered_replies, children_map) {
-            ordered_replies.push(reply);
-            if (children_map[reply.id]) {
-                for (const child of children_map[reply.id]) {
-                    this.add_reply(child, ordered_replies, children_map);
-                }
-            }
+            return root_replies;
         },
 
         get_depth(reply, replies_by_id) {
@@ -188,4 +153,42 @@ var app = Vue.createApp({
 })
 
 
+app.component('toot', {
+    props: ['toot', 'instance_url', 'homepage', 'user_id', 'indent'],
+    template: '#comment-template',
+    methods: {
+        format_url() {
+            return `${this.instance_url}/@${this.toot.account.acct}/${this.toot.id}`;
+        },
+        pretty_date(date) {
+            const delta = (new Date() - new Date(date)) / 1000;
+            const days = Math.floor(delta / 86400);
+            var seconds = delta % 86400;
+            const hours = Math.floor(seconds / 3600);
+            seconds = seconds % 3600;
+            const minutes = Math.floor(seconds / 60);
+            seconds = Math.floor(seconds % 60);
+            if (days > 1) {
+                return `${days} days ago`;
+            } else if (days == 1) {
+                return `1 day ago`;
+            } else if (hours > 1) {
+                return `${hours} hours ago`;
+            } else if (hours == 1) {
+                return `1 hour ago`;
+            } else if (minutes > 1) {
+                return `${minutes} minutes ago`;
+            } else {
+                return `1 minute ago`;
+            }
+        },
+        children() {
+            return this.toot.children || [];
+        },
+
+
+    }
+})
+
 app.mount('#app')
+

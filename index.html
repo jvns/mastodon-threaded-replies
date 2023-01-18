@@ -1,6 +1,4 @@
 <html>
-  <!-- tailwind -->
-
   <head>
     <title> Mastodon Threaded Replies </title>
     <link rel="stylesheet" href="lib/tailwind.min.css">
@@ -9,10 +7,23 @@ body {
   font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji"
 }
 
+#toots-container details:first-child {
+  margin-left: 0px;
+}
+
+details > summary {
+  list-style: none;
+  cursor: pointer;
+}
+details > summary::-webkit-details-marker {
+  display: none;
+}
+
 h1 {
   text-align: center;
   font-weight: normal;
 }
+
 
 .container {
   max-width: 1200px;
@@ -23,9 +34,39 @@ h1 {
 }
 
 .toot {
-  border-left: 2px solid #ccc;
-  padding-left: .4em;
-  margin: .5em;
+  position: relative;
+  margin-top: .5rem;
+}
+
+.toot-header, .toot-content {
+  padding-left: 2rem;
+  border-left: 2px #ccc solid;
+}
+
+.me > .toot-header, .me > .toot-content {
+  border-left-color: orange;
+}
+
+
+
+details[open] > summary:before {
+  content: "[-]";
+}
+
+details:not([open]) > summary:before {
+  content: "[+]";
+}
+
+summary:before {
+  position: absolute;
+  /* default inconsolata */
+  font-family: "Inconsolata", "Menlo", "Consolas", "Liberation Mono", "Courier New", monospace;
+  top: 0;
+  left: .4rem;
+}
+
+.toot-content {
+  margin-bottom: .5rem;
 }
 
 .invisible {
@@ -42,10 +83,12 @@ h1 {
 }
 
 p {
-  margin: .2em;
+  margin: .2em 0;
 }
-.toot.me {
-  border-left-color: orange;
+
+
+p:first-child {
+  margin-top: 0;
 }
 
 a {
@@ -79,50 +122,15 @@ a {
         <div class="absolute top-0 right-0 m-4">
           <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded" @click="logout()">Logout</button>
         </div>
-        <div v-if="status_id">
-          <p class="py-4">
+        <div v-if="status_id" class="py-4" id="toots-container">
           Click on the date to view the original toot
-          </p>
-          <div class="toot" v-for="toot in replies[status_id]" :style='{ "margin-left": toot.depth + "em" }' :class="{ 'me': toot.account.id == user_id }">
-            <div class="toot-header">
-              <span class="account">{{toot.account.acct}}</span>  &nbsp;
-              <a :href="format_url(toot)" target="_blank">
-                <span class="time">{{pretty_date(toot.created_at)}}</span>
-              </a>
-              <span v-if="toot.favourited" alt="Favourited" aria-label="Favourited" class="ml-1" style="color: #bb2">&#9733;</span>
-            </div>
-            <div v-html="toot.content"></div>
-            <div v-if="toot.media_attachments.length > 0">
-              <div v-for="media in toot.media_attachments">
-                <a :href="media.url" target="_blank">
-                  <img :src="media.url" :alt="media.description" class="w-48 h-48 object-cover object-left-top">
-                </a>
-              </div>
-            </div>
-          </div>
+          <toot v-for="toot in replies[status_id]" :user_id="user_id" :instance_url="mastodon.instanceURL" :toot="toot">
+          </toot>
         </div>
-        <div v-else v-for="toot in my_toots" class="toot" style="margin-bottom: 2rem;">
-          <div class="toot-header">
-            <span class="account">{{toot.account.username}}</span>  &nbsp;
-            <a :href="toot.url" target="_blank">
-              <span class="time">{{pretty_date(toot.created_at)}}</span>
-            </a>
-          </div>
 
-          <div v-html="toot.content"></div>
-          <div v-if="toot.media_attachments.length > 0">
-              <div v-for="media in toot.media_attachments">
-                <a :href="media.url" target="_blank">
-                  <img :src="media.url" :alt="media.description" class="w-48 h-48 object-cover object-left-top">
-                </a>
-              </div>
-            </div>
+        <toot v-else v-for="toot in my_toots" :homepage="true" :toot="toot" style="margin-bottom: 2rem;">
+        </toot>
 
-            <a :href='"/#" + toot.id' class="view-replies">
-              View Replies
-            </a>
-
-        </div>
       </div>
 
       <div v-else>
@@ -150,7 +158,32 @@ a {
     </div>
     </div>
   </body>
-  <!-- vue 3 -->
+  <script type="text/x-template" id="comment-template">
+    <details open class="toot" :class="{ 'me': toot.account.id == user_id, 'ml-8': indent}">
+      <summary class="toot-header">
+        <span class="account">{{toot.account.acct}}</span>  &nbsp;
+        <a :href="format_url(toot)" target="_blank">
+          <span class="time">{{pretty_date(toot.created_at)}}</span>
+        </a>
+        <span v-if="toot.favourited" alt="Favourited" aria-label="Favourited" class="ml-1" style="color: #bb2">&#9733;</span>
+      </summary>
+      <div class="toot-content">
+        <div class="toot-html" v-html="toot.content"></div>
+        <div v-if="toot.media_attachments.length > 0">
+          <div v-for="media in toot.media_attachments">
+            <a :href="media.url" target="_blank">
+              <img :src="media.url" :alt="media.description" class="w-48 h-48 object-cover object-left-top">
+            </a>
+          </div>
+        </div>
+      </div>
+      <toot v-for="child in toot.children" :toot="child" :user_id="user_id" :indent="true" :instance_url="instance_url">
+      </toot>
+      <a v-if="homepage" :href='"/#" + toot.id' class="view-replies">
+        View Replies
+      </a>
+    </details>
+  </script>
   <script src="lib/vue.global.prod.js"></script>
   <script src="mastodon.js"></script>
   <script src="script.js"></script>
