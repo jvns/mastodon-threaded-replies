@@ -118,6 +118,9 @@ var app = Vue.createApp({
                 return 0;
             }
             const parent = replies_by_id[reply.in_reply_to_id];
+            if (!parent) {
+                return 0;
+            }
             return this.get_depth(parent, replies_by_id) + 1;
         },
 
