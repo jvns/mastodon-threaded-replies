@@ -19,7 +19,7 @@ var app = Vue.createApp({
             app_name: 'show-threaded-replies',
             app_url: 'https://threaded-replies.jvns.ca',
             // best docs for scopes is here: https://github.com/mastodon/mastodon/pull/7929
-            scopes: 'read:statuses read:accounts',
+            scopes: 'read:statuses read:accounts read:search',
         });
         if (!this.mastodon.loggedIn()) {
             return;
@@ -44,7 +44,15 @@ var app = Vue.createApp({
         },
 
         async get_thread() {
-            const status_id = window.location.hash.slice(1);
+            let status_id = window.location.hash.slice(1);
+            if (isNaN(status_id)) {
+              const url = `/api/v2/search?q=${encodeURIComponent(status_id)}&resolve=true`;
+              const resp = await (await this.mastodon.get(url)).json();
+              /* get the status id from the response */
+              console.log(resp);
+              status_id = resp.statuses[0].id;
+                console.log(status_id);
+            }
             this.status_id = status_id || undefined;
             if (!status_id) {
                 return;
@@ -55,6 +63,7 @@ var app = Vue.createApp({
             }
             const data = await response.json();
             this.replies[status_id] = this.sort_replies(data.descendants);
+            console.log(this.replies);
         },
 
         sort_replies(replies) {
